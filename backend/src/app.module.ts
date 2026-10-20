@@ -1,12 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { OriginGuard } from './auth/guards/origin.guard';
+import { RolesGuard } from './auth/guards/roles.guard';
 import { validateEnvironment } from './config/env';
 import { IdempotencyKey } from './database/entities/idempotency-key.entity';
 import { OrderItem } from './database/entities/order-item.entity';
 import { Order } from './database/entities/order.entity';
 import { User } from './database/entities/user.entity';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -15,6 +22,7 @@ import { User } from './database/entities/user.entity';
       envFilePath: process.env.ENV_FILE ?? '../.env',
       validate: validateEnvironment,
     }),
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 100 }]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -27,8 +35,16 @@ import { User } from './database/entities/user.entity';
         extra: { max: 10 },
       }),
     }),
+    AuthModule,
+    OrdersModule,
   ],
   controllers: [AppController],
+  providers: [
+    { provide: APP_GUARD, useClass: OriginGuard },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+  ],
 })
 export class AppModule {}
 
