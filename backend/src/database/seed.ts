@@ -41,7 +41,9 @@ async function seed(): Promise<void> {
           (ARRAY['Ahmed','Sara','Omar','Nour','Youssef','Mariam','Khalid','Lina','Hassan','Reem'])[1 + ((n - 1) % 10)] || ' ' ||
             (ARRAY['Ali','Hassan','Ibrahim','Saleh','Mahmoud','Farouk','Kamal','Nasser','Samir','Fahmy'])[1 + (((n - 1) / 10) % 10)] || ' ' || n,
           'customer' || n || '@example.com',
-          (ARRAY['pending', 'processing', 'completed', 'cancelled']::order_status[])[1 + (n % 4)],
+          -- Hashed rather than n % 4 so status is independent of the name cycle (n % 10).
+          (ARRAY['pending', 'processing', 'completed', 'cancelled']::order_status[])
+            [1 + (('x' || substr(md5('status:' || n), 1, 4))::bit(16)::int % 4)],
           0,
           '2026-10-20 00:00:00+00'::timestamptz - ((n % 365) || ' days')::interval - ((n % 86400) || ' seconds')::interval
         FROM generate_series(1, 50000) AS n

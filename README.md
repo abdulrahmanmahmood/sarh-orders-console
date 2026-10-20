@@ -32,6 +32,8 @@ npm run dev:web
 
 Open `http://localhost:3000`. PostgreSQL binds host port 5433 to avoid common local conflicts.
 
+The web app must run on port 3000 because the API accepts state-changing requests only from `FRONTEND_ORIGIN`. `dev:web` fails if port 3000 is busy instead of silently moving to another port; to use a different port, change both the `-p` flag and `FRONTEND_ORIGIN`.
+
 Development users share password `SarhDemo2026!`:
 
 - Agent: `agent@sarh.local`
@@ -47,7 +49,7 @@ npm --prefix backend run proof:duplicates  # API must be running
 npm --prefix backend run seed -- --reset   # explicitly replaces local data
 ```
 
-The seed creates 50,000 orders and exactly 150,000 items with deterministic IDs, names, dates, item counts, and prices. It refuses to overwrite a non-empty table unless `--reset` is supplied.
+The seed creates 50,000 orders and exactly 150,000 items with deterministic IDs, names, dates, statuses, item counts, and prices. Status is hashed independently of the name cycle, so every customer name appears with every status. It refuses to overwrite a non-empty table unless `--reset` is supplied.
 
 ## API
 
@@ -76,7 +78,7 @@ The schema also provides no-status amount sorting, status/date sorting, lowercas
 
 ## Correctness evidence
 
-`npm --prefix backend run proof:duplicates` sends 20 identical requests concurrently with one key. The verified run produced one `201`, nineteen `200` replays, one unique order ID, one database order, one item set, one key row, and `409` for reuse with changed data.
+`npm --prefix backend run proof:duplicates` sends 20 identical requests concurrently with one key. The verified run produced one `201`, nineteen `200` replays, one unique order ID, one database order, one item set, one key row, and `409` for reuse with changed data. Each run signs in once, so the per-account login limit allows five runs per minute; a sixth fails fast with `Login failed with 429`.
 
 For a visible R1 recording, set the following only in local development and restart the API:
 
@@ -98,7 +100,7 @@ The frontend combines request cancellation with a sequence guard; the sequence i
 7. Query-string tokens leak through logs, history, and referrers; only an HttpOnly cookie is accepted.
 8. Hard deletion of financial records had no audit/recovery path; deletion now records `deleted_at` and `deleted_by`.
 9. Delete returned success for missing records; missing/already-deleted orders now return `404`.
-10. Login had no brute-force control; local login is rate-limited per IP.
+10. Login had no brute-force control; login is now limited to 5 attempts per minute per IP+email (guessing one account) and 30 per minute per IP across all emails (password spraying). Limits are in-memory, so they reset on restart and are per-instance.
 
 The JWT is stored in an `HttpOnly`, `SameSite=Strict` cookie on the single origin exposed by the Next.js proxy. JavaScript cannot read the token, while SameSite plus exact Origin validation mitigate CSRF; this does not stop XSS from making authenticated requests inside the page, so React escaping and a restrictive production CSP still matter.
 
@@ -113,6 +115,16 @@ I would ask why deletion is needed, what audit/retention rules apply, whether ca
 - Automated browser E2E: the focused hook proof, API proof, builds, and manual acceptance checks cover the scored risks; broader browser coverage is the first follow-up.
 - Distributed throttling, refresh tokens, account management, and CSP deployment headers: production concerns outside this local slice, documented in the design notes.
 - Cross-agent business duplicate rejection: idempotency cannot identify two independent entries without a reliable business key; a similarity warning is safer than automatic rejection.
+
+### Known gaps (found in review, not fixed)
+
+- A hand-crafted cursor with the right shape but a bad value (for example `"abc"` as an amount) returns `500` instead of `400`; the cursor's sort value is not type-checked before it reaches PostgreSQL.
+- Errors mostly use NestJS's default `{ statusCode, message, error }` shape, while cursor errors use `{ code, message }`; there is no single error envelope.
+- If the session expires while browsing, the list shows an error with Retry instead of redirecting to the login page.
+- `/api/auth/me` and the roles guard read the user from the token, not the database, so a deleted or demoted user keeps access until the 8-hour token expires.
+- Authorization (`401` without/forged token, `403` agent delete, admin soft delete, Origin rejection) was verified manually with curl; there is no automated script for it yet.
+- On a double-click both requests reach the server (correctly creating one order), but the replayed response arrives second and replaces "Order created." with "Existing order recovered safely."
+- The rate limiter trusts `X-Forwarded-For` only from loopback, which assumes Next.js and the API share a host. Behind an extra load balancer the IP part of each key would become the balancer's address.
 
 See [DECISIONS.md](./DECISIONS.md), [SCALE.md](./SCALE.md), [SPEC.md](./SPEC.md), and [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
 
