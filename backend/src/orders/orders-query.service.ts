@@ -3,6 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { createHash } from 'node:crypto';
 import { DataSource } from 'typeorm';
 import { z } from 'zod';
+import { ConfigService } from '@nestjs/config';
 import { ListOrdersDto, OrderSort, SortDirection } from './dto/list-orders.dto';
 
 const cursorSchema = z.object({
@@ -38,9 +39,13 @@ interface RawOrderRow {
 
 @Injectable()
 export class OrdersQueryService {
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly config: ConfigService,
+  ) {}
 
   async list(query: ListOrdersDto): Promise<ListResult> {
+    await this.simulateDevelopmentLatency();
     const sort = query.sort ?? OrderSort.CreatedAt;
     const direction = query.direction ?? SortDirection.Desc;
     const limit = query.limit ?? 50;
@@ -109,6 +114,15 @@ export class OrdersQueryService {
       }),
       pageInfo: { nextCursor, hasNextPage },
     };
+  }
+
+  private async simulateDevelopmentLatency(): Promise<void> {
+    if (this.config.get<string>('NODE_ENV') === 'production') return;
+    const min = this.config.get<number>('SIMULATE_LATENCY_MIN_MS') ?? 0;
+    const max = Math.max(min, this.config.get<number>('SIMULATE_LATENCY_MAX_MS') ?? 0);
+    if (max === 0) return;
+    const delay = Math.floor(min + Math.random() * (max - min + 1));
+    await new Promise((resolve) => setTimeout(resolve, delay));
   }
 
   private filterFingerprint(search?: string, status?: string): string {

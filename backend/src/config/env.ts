@@ -10,6 +10,8 @@ const environmentSchema = z.object({
   }),
   JWT_ISSUER: z.string().min(1).default('sarh-orders-api'),
   JWT_AUDIENCE: z.string().min(1).default('sarh-orders-web'),
+  SIMULATE_LATENCY_MIN_MS: z.coerce.number().int().min(0).max(10_000).default(0),
+  SIMULATE_LATENCY_MAX_MS: z.coerce.number().int().min(0).max(10_000).default(0),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;
