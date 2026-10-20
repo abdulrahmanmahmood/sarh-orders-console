@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { isUUID } from 'class-validator';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -26,6 +27,7 @@ import { CreateOrderResult } from './order.types';
 import { OrdersQueryService } from './orders-query.service';
 
 @Controller('orders')
+@SkipThrottle({ default: true })
 export class OrdersController {
   constructor(
     private readonly orders: OrdersService,

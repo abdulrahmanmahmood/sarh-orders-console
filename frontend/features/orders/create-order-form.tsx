@@ -42,9 +42,11 @@ export function CreateOrderForm({ onCreated }: { onCreated: () => void }) {
     setBusy(true); setMessage(''); retryPayload.current = body;
     try {
       const response = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key.current }, body: JSON.stringify(body) });
-      const result = await response.json() as { message?: string; replayed?: boolean; order?: { deletedAt?: string | null } };
+      const result = await response.json() as { message?: string | string[]; replayed?: boolean; order?: { deletedAt?: string | null } };
+      const responseMessage = Array.isArray(result.message) ? result.message.join(', ') : result.message;
       if (response.status === 409) { setLocked(true); setMessage('This key was used with different data. Start over to create a new submission.'); return; }
-      if (!response.ok) { setMessage(result.message ?? 'The order was rejected.'); return; }
+      if (response.status >= 500) { setLocked(true); setMessage('The result is uncertain. Retry the same submission or start over.'); return; }
+      if (!response.ok) { setMessage(responseMessage ?? 'The order was rejected.'); return; }
       if (result.order?.deletedAt) setMessage('This submission previously created an order that was later deleted.');
       else setMessage(result.replayed ? 'Existing order recovered safely.' : 'Order created.');
       setCustomerName(''); setCustomerEmail(''); setItems([emptyItem()]); retryPayload.current = null; key.current = crypto.randomUUID(); setLocked(false); onCreated();

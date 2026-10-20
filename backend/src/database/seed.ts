@@ -35,24 +35,30 @@ async function seed(): Promise<void> {
       await manager.query(`
         INSERT INTO orders (id, customer_name, customer_email, status, total_amount_cents, created_at)
         SELECT
-          gen_random_uuid(),
-          'Customer ' || n,
+          (substr(md5('order:' || n), 1, 8) || '-' || substr(md5('order:' || n), 9, 4) || '-4' ||
+            substr(md5('order:' || n), 14, 3) || '-8' || substr(md5('order:' || n), 18, 3) || '-' ||
+            substr(md5('order:' || n), 21, 12))::uuid,
+          (ARRAY['Ahmed','Sara','Omar','Nour','Youssef','Mariam','Khalid','Lina','Hassan','Reem'])[1 + ((n - 1) % 10)] || ' ' ||
+            (ARRAY['Ali','Hassan','Ibrahim','Saleh','Mahmoud','Farouk','Kamal','Nasser','Samir','Fahmy'])[1 + (((n - 1) / 10) % 10)] || ' ' || n,
           'customer' || n || '@example.com',
           (ARRAY['pending', 'processing', 'completed', 'cancelled']::order_status[])[1 + (n % 4)],
           0,
-          date_trunc('milliseconds', now() - ((n % 365) || ' days')::interval - ((n % 86400) || ' seconds')::interval)
+          '2026-10-20 00:00:00+00'::timestamptz - ((n % 365) || ' days')::interval - ((n % 86400) || ' seconds')::interval
         FROM generate_series(1, 50000) AS n
       `);
 
       await manager.query(`
-        INSERT INTO order_items (order_id, name, quantity, unit_price_cents)
+        INSERT INTO order_items (id, order_id, name, quantity, unit_price_cents)
         SELECT
-          o.id,
+          md5('item:' || n || ':' || item_number)::uuid,
+          (substr(md5('order:' || n), 1, 8) || '-' || substr(md5('order:' || n), 9, 4) || '-4' ||
+            substr(md5('order:' || n), 14, 3) || '-8' || substr(md5('order:' || n), 18, 3) || '-' ||
+            substr(md5('order:' || n), 21, 12))::uuid,
           'Item ' || item_number,
-          1 + (abs(hashtext(o.id::text || ':' || item_number::text)) % 5),
-          100 + (abs(hashtext(item_number::text || ':' || o.id::text)) % 50000)
-        FROM orders o
-        CROSS JOIN LATERAL generate_series(1, 1 + (abs(hashtext(o.id::text)) % 5)) AS item_number
+          1 + ((n + item_number) % 5),
+          100 + ((n * 97 + item_number * 7919) % 50000)
+        FROM generate_series(1, 50000) AS n
+        CROSS JOIN LATERAL generate_series(1, 1 + (n % 5)) AS item_number
       `);
 
       await manager.query(`

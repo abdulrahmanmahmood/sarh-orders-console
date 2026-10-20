@@ -2,12 +2,13 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { OriginGuard } from './auth/guards/origin.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
+import { ProxyAwareThrottlerGuard } from './auth/guards/proxy-aware-throttler.guard';
 import { validateEnvironment } from './config/env';
 import { IdempotencyKey } from './database/entities/idempotency-key.entity';
 import { OrderItem } from './database/entities/order-item.entity';
@@ -41,8 +42,8 @@ import { OrdersModule } from './orders/orders.module';
   controllers: [AppController],
   providers: [
     { provide: APP_GUARD, useClass: OriginGuard },
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: ProxyAwareThrottlerGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })

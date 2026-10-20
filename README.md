@@ -16,6 +16,7 @@ Requirements: Node.js 20.9+, npm, and Docker with Compose.
 
 ```bash
 cp .env.example .env
+openssl rand -hex 32  # paste this value into JWT_SECRET in .env
 npm run install:all
 npm run db:up
 npm run db:migrate
@@ -46,7 +47,7 @@ npm --prefix backend run proof:duplicates  # API must be running
 npm --prefix backend run seed -- --reset   # explicitly replaces local data
 ```
 
-The seed creates 50,000 orders and 150,000± items in about 19 seconds on the development environment. It refuses to overwrite a non-empty table unless `--reset` is supplied.
+The seed creates 50,000 orders and exactly 150,000 items with deterministic IDs, names, dates, item counts, and prices. It refuses to overwrite a non-empty table unless `--reset` is supplied.
 
 ## API
 
@@ -63,7 +64,7 @@ List parameters are `search`, `status`, `sort`, `direction`, `limit`, and opaque
 
 ## Performance evidence
 
-Measured with 50,000 seeded orders and 150,365 items:
+Measured with 50,000 seeded orders; exact timings vary after deterministic reseeding and across hardware:
 
 | Query | Plan | Execution |
 |---|---|---:|
