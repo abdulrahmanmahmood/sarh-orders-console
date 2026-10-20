@@ -6,13 +6,17 @@ import { z } from 'zod';
 import { ConfigService } from '@nestjs/config';
 import { ListOrdersDto, OrderSort, SortDirection } from './dto/list-orders.dto';
 
-const cursorSchema = z.object({
+const cursorBase = {
   v: z.literal(1),
-  sort: z.nativeEnum(OrderSort),
   dir: z.nativeEnum(SortDirection),
   f: z.string().length(16),
-  k: z.tuple([z.string().min(1), z.string().uuid()]),
-});
+};
+
+// The sort value is cast to timestamptz/bigint in SQL, so its shape must be checked here to keep bad input a 400.
+const cursorSchema = z.discriminatedUnion('sort', [
+  z.object({ ...cursorBase, sort: z.literal(OrderSort.CreatedAt), k: z.tuple([z.iso.datetime(), z.uuid()]) }),
+  z.object({ ...cursorBase, sort: z.literal(OrderSort.Amount), k: z.tuple([z.string().regex(/^\d{1,18}$/), z.uuid()]) }),
+]);
 
 interface OrderListRow {
   id: string;

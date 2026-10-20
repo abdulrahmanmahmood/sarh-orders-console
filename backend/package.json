@@ -9,8 +9,9 @@
     "typecheck": "tsc --noEmit",
     "migration:run": "tsx ./node_modules/typeorm/cli.js migration:run -d src/database/data-source.ts",
     "migration:revert": "tsx ./node_modules/typeorm/cli.js migration:revert -d src/database/data-source.ts",
-    "seed": "tsx src/database/seed.ts"
-    ,"proof:duplicates": "tsx src/proofs/duplicate-proof.ts"
+    "seed": "tsx src/database/seed.ts",
+    "proof:duplicates": "tsx src/proofs/duplicate-proof.ts",
+    "proof:auth": "tsx src/proofs/auth-proof.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.0",

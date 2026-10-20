@@ -38,24 +38,28 @@ export function CreateOrderForm({ onCreated }: { onCreated: () => void }) {
     return { customerName: customerName.trim(), customerEmail: customerEmail.trim().toLowerCase(), items: normalizedItems.map((i) => ({ ...i, unitPriceCents: i.unitPriceCents! })) };
   }
 
-  async function send(body: CreatePayload) {
+  async function send(body: CreatePayload, isRetry: boolean) {
+    const submittedKey = key.current;
     setBusy(true); setMessage(''); retryPayload.current = body;
     try {
-      const response = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key.current }, body: JSON.stringify(body) });
+      const response = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': submittedKey }, body: JSON.stringify(body) });
       const result = await response.json() as { message?: string | string[]; replayed?: boolean; order?: { deletedAt?: string | null } };
+      // A double-click sends the same key twice; once the first response has reset the form, the duplicate's reply is stale.
+      if (submittedKey !== key.current) return;
       const responseMessage = Array.isArray(result.message) ? result.message.join(', ') : result.message;
       if (response.status === 409) { setLocked(true); setMessage('This key was used with different data. Start over to create a new submission.'); return; }
       if (response.status >= 500) { setLocked(true); setMessage('The result is uncertain. Retry the same submission or start over.'); return; }
       if (!response.ok) { setMessage(responseMessage ?? 'The order was rejected.'); return; }
       if (result.order?.deletedAt) setMessage('This submission previously created an order that was later deleted.');
-      else setMessage(result.replayed ? 'Existing order recovered safely.' : 'Order created.');
+      else setMessage(result.replayed && isRetry ? 'Existing order recovered safely.' : 'Order created.');
       setCustomerName(''); setCustomerEmail(''); setItems([emptyItem()]); retryPayload.current = null; key.current = crypto.randomUUID(); setLocked(false); onCreated();
     } catch {
+      if (submittedKey !== key.current) return;
       setLocked(true); setMessage('The result is uncertain. Retry the same submission or start over.');
     } finally { setBusy(false); }
   }
 
-  function submit(event: FormEvent) { event.preventDefault(); const body = payload(); if (body) void send(body); }
+  function submit(event: FormEvent) { event.preventDefault(); const body = payload(); if (body) void send(body, false); }
   function startOver() { if (!confirm('Discard this submission and use a new idempotency key?')) return; key.current = crypto.randomUUID(); retryPayload.current = null; setLocked(false); setMessage(''); }
   function updateItem(index: number, patch: Partial<DraftItem>) { setItems((current) => current.map((item, i) => i === index ? { ...item, ...patch } : item)); }
 
@@ -63,7 +67,7 @@ export function CreateOrderForm({ onCreated }: { onCreated: () => void }) {
     <div className="form-grid"><label>Customer name<input disabled={locked} value={customerName} onChange={(e) => setCustomerName(e.target.value)} maxLength={150} required /></label><label>Email<input disabled={locked} type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} required /></label></div>
     <div className="items"><strong>Items</strong>{items.map((item, index) => <div className="item-row" key={index}><input aria-label={`Item ${index + 1} name`} disabled={locked} placeholder="Item name" value={item.name} onChange={(e) => updateItem(index, { name: e.target.value })} /><input aria-label={`Item ${index + 1} quantity`} disabled={locked} type="number" min="1" max="1000" value={item.quantity} onChange={(e) => updateItem(index, { quantity: e.target.value })} /><input aria-label={`Item ${index + 1} price`} disabled={locked} inputMode="decimal" value={item.unitPrice} onChange={(e) => updateItem(index, { unitPrice: e.target.value })} />{items.length > 1 && <button type="button" className="secondary" disabled={locked} onClick={() => setItems((v) => v.filter((_, i) => i !== index))}>Remove</button>}</div>)}</div>
     <div className="create-actions"><button type="button" className="secondary" disabled={locked || items.length >= 5} onClick={() => setItems((v) => [...v, emptyItem()])}>Add item</button><strong>Total: ${(total / 100).toFixed(2)}</strong><button disabled={busy || locked}>{busy ? 'Submitting…' : 'Create order'}</button></div>
-    {locked && <div className="retry-actions"><button type="button" disabled={busy || !retryPayload.current} onClick={() => retryPayload.current && void send(retryPayload.current)}>Retry</button><button type="button" className="secondary" onClick={startOver}>Start over</button></div>}
+    {locked && <div className="retry-actions"><button type="button" disabled={busy || !retryPayload.current} onClick={() => retryPayload.current && void send(retryPayload.current, true)}>Retry</button><button type="button" className="secondary" disabled={busy} onClick={startOver}>Start over</button></div>}
     {message && <p className="notice">{message}</p>}
   </form></details>;
 }

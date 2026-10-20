@@ -31,4 +31,12 @@ describe('useOrdersQuery', () => {
     expect(result.current.data[0]?.id).toBe('latest');
     expect(result.current.loading).toBe(false);
   });
+
+  it('flags an expired session so the page can redirect to login', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401 } as Response));
+    const filters: OrderFilters = { search: '', status: '', sort: 'createdAt', direction: 'desc', cursor: '' };
+    const { result } = renderHook(() => useOrdersQuery(filters));
+    await waitFor(() => expect(result.current.unauthorized).toBe(true));
+    expect(result.current.error).toBe('Your session expired.');
+  });
 });

@@ -15,6 +15,7 @@ export function useOrdersQuery(filters: OrderFilters) {
   const [result, setResult] = useState<OrdersPageResponse>({ data: [], pageInfo: { nextCursor: null, hasNextPage: false } });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [unauthorized, setUnauthorized] = useState(false);
   const [retry, setRetry] = useState(0);
   const sequence = useRef(0);
 
@@ -32,6 +33,7 @@ export function useOrdersQuery(filters: OrderFilters) {
     setError(null);
     void fetch(`/api/orders?${params}`, { signal: controller.signal })
       .then(async (response) => {
+        if (response.status === 401 && sequence.current === current) setUnauthorized(true);
         if (!response.ok) throw new Error(response.status === 401 ? 'Your session expired.' : 'Could not load orders.');
         return (await response.json()) as OrdersPageResponse;
       })
@@ -49,6 +51,6 @@ export function useOrdersQuery(filters: OrderFilters) {
     return () => controller.abort();
   }, [filters.cursor, filters.direction, filters.search, filters.sort, filters.status, retry]);
 
-  return { ...result, loading, error, reload };
+  return { ...result, loading, error, unauthorized, reload };
 }
 

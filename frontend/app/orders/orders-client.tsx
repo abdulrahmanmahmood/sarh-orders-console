@@ -18,6 +18,7 @@ export function OrdersClient() {
   const query = useOrdersQuery(filters);
 
   useEffect(() => { void fetch('/api/auth/me').then(async (r) => { if (!r.ok) router.replace('/login'); else setUser(await r.json()); }); }, [router]);
+  useEffect(() => { if (query.unauthorized) router.replace('/login'); }, [query.unauthorized, router]);
   useEffect(() => { const id = setTimeout(() => setFilters((f) => ({ ...f, search: searchInput.trim().toLowerCase(), cursor: '' })), 300); return () => clearTimeout(id); }, [searchInput]);
   useEffect(() => { const params = new URLSearchParams(); Object.entries(filters).forEach(([k, v]) => { if (v && k !== 'cursor') params.set(k, v); }); window.history.replaceState(null, '', `/orders?${params}`); }, [filters]);
   const hint = useMemo(() => searchInput.trim().length > 0 && searchInput.trim().length < 3, [searchInput]);

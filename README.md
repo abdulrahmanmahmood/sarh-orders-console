@@ -46,6 +46,7 @@ npm run typecheck
 npm run build
 npm --prefix frontend test
 npm --prefix backend run proof:duplicates  # API must be running
+npm --prefix backend run proof:auth        # API must be running
 npm --prefix backend run seed -- --reset   # explicitly replaces local data
 ```
 
@@ -79,6 +80,13 @@ The schema also provides no-status amount sorting, status/date sorting, lowercas
 ## Correctness evidence
 
 `npm --prefix backend run proof:duplicates` sends 20 identical requests concurrently with one key. The verified run produced one `201`, nineteen `200` replays, one unique order ID, one database order, one item set, one key row, and `409` for reuse with changed data. Each run signs in once, so the per-account login limit allows five runs per minute; a sixth fails fast with `Login failed with 429`.
+
+`npm --prefix backend run proof:auth` checks the fixed authentication code over real HTTP with 14 assertions:
+- Forged admin tokens are rejected with `401`: a guessed secret, `alg: none`, an expired token, and a wrong audience.
+- A control token with the same claims, correctly signed, is accepted, so each `401` comes from the specific defect.
+- An agent can list and create orders but gets `403` on delete.
+- A foreign `Origin` gets `403`.
+- An admin soft-deletes the order, it disappears from search, and a second delete returns `404`.
 
 For a visible R1 recording, set the following only in local development and restart the API:
 
@@ -118,12 +126,8 @@ I would ask why deletion is needed, what audit/retention rules apply, whether ca
 
 ### Known gaps (found in review, not fixed)
 
-- A hand-crafted cursor with the right shape but a bad value (for example `"abc"` as an amount) returns `500` instead of `400`; the cursor's sort value is not type-checked before it reaches PostgreSQL.
 - Errors mostly use NestJS's default `{ statusCode, message, error }` shape, while cursor errors use `{ code, message }`; there is no single error envelope.
-- If the session expires while browsing, the list shows an error with Retry instead of redirecting to the login page.
 - `/api/auth/me` and the roles guard read the user from the token, not the database, so a deleted or demoted user keeps access until the 8-hour token expires.
-- Authorization (`401` without/forged token, `403` agent delete, admin soft delete, Origin rejection) was verified manually with curl; there is no automated script for it yet.
-- On a double-click both requests reach the server (correctly creating one order), but the replayed response arrives second and replaces "Order created." with "Existing order recovered safely."
 - The rate limiter trusts `X-Forwarded-For` only from loopback, which assumes Next.js and the API share a host. Behind an extra load balancer the IP part of each key would become the balancer's address.
 
 See [DECISIONS.md](./DECISIONS.md), [SCALE.md](./SCALE.md), [SPEC.md](./SPEC.md), and [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
