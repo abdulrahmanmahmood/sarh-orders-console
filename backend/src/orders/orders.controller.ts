@@ -3,12 +3,14 @@ import {
   BadRequestException,
   Controller,
   Delete,
+  Get,
   Headers,
   HttpCode,
   HttpStatus,
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
@@ -19,11 +21,21 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../database/entities/user.entity';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { ListOrdersDto } from './dto/list-orders.dto';
 import { CreateOrderResult } from './order.types';
+import { OrdersQueryService } from './orders-query.service';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly orders: OrdersService) {}
+  constructor(
+    private readonly orders: OrdersService,
+    private readonly ordersQuery: OrdersQueryService,
+  ) {}
+
+  @Get()
+  list(@Query() query: ListOrdersDto) {
+    return this.ordersQuery.list(query);
+  }
 
   @Post()
   async create(
