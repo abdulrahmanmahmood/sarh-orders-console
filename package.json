@@ -1,0 +1,21 @@
+{
+  "name": "sarh-orders-console",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "npm --prefix backend run migration:run",
+    "db:revert": "npm --prefix backend run migration:revert",
+    "db:seed": "npm --prefix backend run seed",
+    "dev:api": "npm --prefix backend run start:dev",
+    "dev:web": "npm --prefix frontend run dev",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck"
+  }
+}
+

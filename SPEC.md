@@ -20,8 +20,8 @@ The complete technical design remains in [IMPLEMENTATION_PLAN.md](./IMPLEMENTATI
 
 | Spec | Budget | Status | Acceptance evidence |
 |---|---:|---|---|
-| 00 Mission | 15 min | Not started | Specs reviewed for consistency |
-| 01 Foundation/data | 35 min | Not started | Migration and seed output |
+| 00 Mission | 15 min | Accepted | Specification baseline committed as `11dfa41` |
+| 01 Foundation/data | 35 min | Accepted | Build/typecheck; 50,000 orders, 150,365 items, zero invalid totals |
 | 02 Auth/security | 45 min | Not started | 401/403/Origin checks |
 | 03 Idempotent API | 45 min | Not started | Create/replay/conflict/rollback checks |
 | 04 List API | 45 min | Not started | Pagination checks and query plans |

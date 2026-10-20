@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-orders_console}
+      POSTGRES_USER: ${POSTGRES_USER:-orders}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orders_local_password}
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - orders_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  orders_postgres_data:
+
