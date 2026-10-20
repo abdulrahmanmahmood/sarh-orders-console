@@ -27,7 +27,7 @@ The complete technical design remains in [IMPLEMENTATION_PLAN.md](./IMPLEMENTATI
 | 04 List API | 45 min | Accepted | Bounded cursor pages, filters/search/sorts; measured index plans (0.36/0.17/38 ms) |
 | 05 List UI | 45 min | Accepted | Abort + sequence guard, bounded table, URL filters, visible latency support |
 | 06 Create UI | 40 min | Accepted | Exact cents, stable logical key, retry lock, conflict and deleted-replay handling |
-| 07 Verification | 30 min | Not started | Mandatory proof output |
+| 07 Verification | 30 min | Accepted | Vitest race proof passed; 20 concurrent creates = 1×201, 19×200, one DB order/key |
 | 08 Submission | 40 min | Not started | Clean-clone review and evidence |
 
 Total planned work is 5 h 40 min, leaving 20 minutes before the six-hour hard stop. Update Status to `In progress`, `Accepted`, or `Accepted with documented gaps` as work proceeds.
