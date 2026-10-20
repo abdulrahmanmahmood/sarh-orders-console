@@ -23,7 +23,7 @@ The complete technical design remains in [IMPLEMENTATION_PLAN.md](./IMPLEMENTATI
 | 00 Mission | 15 min | Accepted | Specification baseline committed as `11dfa41` |
 | 01 Foundation/data | 35 min | Accepted | Build/typecheck; 50,000 orders, 150,365 items, zero invalid totals |
 | 02 Auth/security | 45 min | Accepted | Manual 400/401/403, Origin, role delete, `/me`, and logout checks |
-| 03 Idempotent API | 45 min | Not started | Create/replay/conflict/rollback checks |
+| 03 Idempotent API | 45 min | Accepted | 201 create, normalized 200 replay, 409 conflict; transaction-scoped manager |
 | 04 List API | 45 min | Not started | Pagination checks and query plans |
 | 05 List UI | 45 min | Not started | Race test and manual latency proof |
 | 06 Create UI | 40 min | Not started | Key-lifecycle and form checks |
