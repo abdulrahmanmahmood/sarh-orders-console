@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { OrderFilters, useOrdersQuery } from '@/features/orders/use-orders-query';
+import { CreateOrderForm } from '@/features/orders/create-order-form';
 
 const initial: OrderFilters = { search: '', status: '', sort: 'createdAt', direction: 'desc', cursor: '' };
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -29,6 +30,7 @@ export default function OrdersPage() {
       <label>Sort<select value={filters.sort} onChange={(e) => update({ sort: e.target.value as OrderFilters['sort'] })}><option value="createdAt">Created date</option><option value="amount">Amount</option></select></label>
       <label>Direction<select value={filters.direction} onChange={(e) => update({ direction: e.target.value as OrderFilters['direction'] })}><option value="desc">Descending</option><option value="asc">Ascending</option></select></label>
     </section>
+    <CreateOrderForm onCreated={query.reload} />
     {hint && <p className="hint">Type at least 3 characters to search.</p>}
     {query.error && <div className="notice error">{query.error} <button onClick={query.reload}>Retry</button></div>}
     <section className={`table-wrap ${query.loading ? 'loading' : ''}`}><table><thead><tr><th>Customer</th><th>Status</th><th>Amount</th><th>Created</th></tr></thead><tbody>

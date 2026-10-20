@@ -26,7 +26,7 @@ The complete technical design remains in [IMPLEMENTATION_PLAN.md](./IMPLEMENTATI
 | 03 Idempotent API | 45 min | Accepted | 201 create, normalized 200 replay, 409 conflict; transaction-scoped manager |
 | 04 List API | 45 min | Accepted | Bounded cursor pages, filters/search/sorts; measured index plans (0.36/0.17/38 ms) |
 | 05 List UI | 45 min | Accepted | Abort + sequence guard, bounded table, URL filters, visible latency support |
-| 06 Create UI | 40 min | Not started | Key-lifecycle and form checks |
+| 06 Create UI | 40 min | Accepted | Exact cents, stable logical key, retry lock, conflict and deleted-replay handling |
 | 07 Verification | 30 min | Not started | Mandatory proof output |
 | 08 Submission | 40 min | Not started | Clean-clone review and evidence |
 
