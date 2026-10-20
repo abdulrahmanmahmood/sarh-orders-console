@@ -2,6 +2,8 @@
 
 A Next.js and NestJS operations console for searching 50,000+ PostgreSQL orders and safely registering phone orders without technical duplicates.
 
+**Demo video (1:58):** https://youtu.be/1PiDUuqu2tE: R1 including the rapid-filter test, and the R2 duplicate proof. Chapter links are under [Correctness evidence](#correctness-evidence).
+
 ## Architecture
 
 ```text
@@ -78,6 +80,19 @@ Measured with 50,000 seeded orders; exact timings vary after deterministic resee
 The schema also provides no-status amount sorting, status/date sorting, lowercase trigram search indexes, and `order_items(order_id)`. PostgreSQL may legitimately choose different plans on other hardware/distributions; these are measured observations, not guarantees.
 
 ## Correctness evidence
+
+The [demo video](https://youtu.be/1PiDUuqu2tE) is a single local session, trimmed to two minutes:
+
+| Time | What it shows |
+|---|---|
+| [0:03](https://youtu.be/1PiDUuqu2tE?t=3) | Seed output (50,000 orders, 150,000 items), then agent sign-in |
+| [0:12](https://youtu.be/1PiDUuqu2tE?t=12) | R1: server-side search, status filter and sort |
+| [0:34](https://youtu.be/1PiDUuqu2tE?t=34) | The list request asks for one page: `limit=50` |
+| [0:36](https://youtu.be/1PiDUuqu2tE?t=36) | R1 rapid-filter test under simulated latency: two requests `(canceled)`, only the last filter's rows render |
+| [0:48](https://youtu.be/1PiDUuqu2tE?t=48) | R2: create order, double-click, "Order created." |
+| [1:25](https://youtu.be/1PiDUuqu2tE?t=85) | The create response (`replayed: false`) and its payload in DevTools |
+| [1:34](https://youtu.be/1PiDUuqu2tE?t=94) | Searching for the customer returns exactly one order |
+| [1:39](https://youtu.be/1PiDUuqu2tE?t=99) | R2 server proof: 20 concurrent identical requests → 1 created, 19 replayed, `409` on a changed payload |
 
 `npm --prefix backend run proof:duplicates` sends 20 identical requests concurrently with one key. The verified run produced one `201`, nineteen `200` replays, one unique order ID, one database order, one item set, one key row, and `409` for reuse with changed data. Each run signs in once, so the per-account login limit allows five runs per minute; a sixth fails fast with `Login failed with 429`.
 
